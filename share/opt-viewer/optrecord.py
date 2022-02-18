@@ -89,7 +89,7 @@ class Remark(yaml.YAMLObject):
             pass
 
         def _reduce_memory_dict(old_dict):
-            new_dict = dict()
+            new_dict = {}
             for (k, v) in iteritems(old_dict):
                 if type(k) is str:
                     k = intern(k)
@@ -109,7 +109,7 @@ class Remark(yaml.YAMLObject):
     #     (('DebugLoc', (('File', ...) ... ))) -> [{'DebugLoc': {'File': ...} ....}]
     def recover_yaml_structure(self):
         def tuple_to_dict(t):
-            d = dict()
+            d = {}
             for (k, v) in t:
                 if type(v) is tuple:
                     v = tuple_to_dict(v)
@@ -158,7 +158,7 @@ class Remark(yaml.YAMLObject):
         assert(len(mapping) == 1)
         (key, value) = list(mapping.items())[0]
 
-        if key == 'Caller' or key == 'Callee' or key == 'DirectCallee':
+        if key in ['Caller', 'Callee', 'DirectCallee']:
             value = html.escape(self.demangle(value))
 
         if dl and key != 'Caller':
@@ -196,10 +196,7 @@ class Remark(yaml.YAMLObject):
 
     def getDiffPrefix(self):
         if hasattr(self, 'Added'):
-            if self.Added:
-                return '+'
-            else:
-                return '-'
+            return '+' if self.Added else '-'
         return ''
 
     @property
@@ -270,15 +267,13 @@ class Failure(Missed):
 
 def get_remarks(input_file, filter_=None):
     max_hotness = 0
-    all_remarks = dict()
+    all_remarks = {}
     file_remarks = defaultdict(functools.partial(defaultdict, list))
 
     with io.open(input_file, encoding = 'utf-8') as f:
         docs = yaml.load_all(f, Loader=Loader)
 
-        filter_e = None
-        if filter_:
-            filter_e = re.compile(filter_)
+        filter_e = re.compile(filter_) if filter_ else None
         for remark in docs:
             remark.canonicalize()
             # Avoid remarks withoug debug location or if they are duplicated
@@ -340,7 +335,10 @@ def find_opt_files(*dirs_or_files):
                 # Exclude mounted directories and symlinks (os.walk default).
                 subdirs[:] = [d for d in subdirs
                               if not os.path.ismount(os.path.join(dir, d))]
-                for file in files:
-                    if fnmatch.fnmatch(file, "*.opt.yaml*"):
-                        all.append(os.path.join(dir, file))
+                all.extend(
+                    os.path.join(dir, file)
+                    for file in files
+                    if fnmatch.fnmatch(file, "*.opt.yaml*")
+                )
+
     return all

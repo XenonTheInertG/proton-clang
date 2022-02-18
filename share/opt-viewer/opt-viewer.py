@@ -106,8 +106,7 @@ class SourceFileRenderer:
 
     def render_inline_remarks(self, r, line):
         inlining_context = r.DemangledFunctionName
-        dl = context.caller_loc.get(r.Function)
-        if dl:
+        if dl := context.caller_loc.get(r.Function):
             dl_dict = dict(list(dl))
             link = optrecord.make_link(dl_dict['File'], dl_dict['Line'] - 2)
             inlining_context = "<a href={link}>{r.DemangledFunctionName}</a>".format(**locals())
@@ -250,8 +249,7 @@ def map_remarks(all_remarks):
         if isinstance(remark, optrecord.Passed) and remark.Pass == "inline" and remark.Name == "Inlined":
             for arg in remark.Args:
                 arg_dict = dict(list(arg))
-                caller = arg_dict.get('Caller')
-                if caller:
+                if caller := arg_dict.get('Caller'):
                     try:
                         context.caller_loc[caller] = arg_dict['DebugLoc']
                     except KeyError:
@@ -270,9 +268,7 @@ def generate_report(all_remarks,
     try:
         os.makedirs(output_dir)
     except OSError as e:
-        if e.errno == errno.EEXIST and os.path.isdir(output_dir):
-            pass
-        else:
+        if e.errno != errno.EEXIST or not os.path.isdir(output_dir):
             raise
 
     if should_print_progress:

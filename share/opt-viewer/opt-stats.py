@@ -57,7 +57,7 @@ if __name__ == '__main__':
     byname = defaultdict(int)
     for r in optrecord.itervalues(all_remarks):
         bypass[r.Pass] += 1
-        byname[r.Pass + "/" + r.Name] += 1
+        byname[f'{r.Pass}/{r.Name}'] += 1
 
     total = len(all_remarks)
     print("{:24s} {:10d}".format("Total number of remarks", total))

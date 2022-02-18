@@ -56,7 +56,7 @@ class Symbolizer:
 
   def __process_source_path(self, file_name):
     for path_to_cut in self.__paths_to_cut:
-      file_name = re.sub(".*" + path_to_cut, "", file_name)
+      file_name = re.sub(f'.*{path_to_cut}', "", file_name)
     file_name = re.sub(".*hwasan_[a-z_]*.(cc|h):[0-9]*", "[hwasan_rtl]", file_name)
     file_name = re.sub(".*asan_[a-z_]*.(cc|h):[0-9]*", "[asan_rtl]", file_name)
     file_name = re.sub(".*crtstuff.c:0", "???:0", file_name)
@@ -141,11 +141,17 @@ def symbolize_line(line, symbolizer_path):
 
 def save_access_address(line):
   global last_access_address, last_access_tag
-  match = re.match(r'^(.*?)HWAddressSanitizer: tag-mismatch on address (0x[0-9a-f]+) ', line, re.UNICODE)
-  if match:
+  if match := re.match(
+      r'^(.*?)HWAddressSanitizer: tag-mismatch on address (0x[0-9a-f]+) ',
+      line,
+      re.UNICODE,
+  ):
     last_access_address = int(match.group(2), 16)
-  match = re.match(r'^(.*?) of size [0-9]+ at 0x[0-9a-f]* tags: ([0-9a-f]+)/[0-9a-f]+ \(ptr/mem\)', line, re.UNICODE)
-  if match:
+  if match := re.match(
+      r'^(.*?) of size [0-9]+ at 0x[0-9a-f]* tags: ([0-9a-f]+)/[0-9a-f]+ \(ptr/mem\)',
+      line,
+      re.UNICODE,
+  ):
     last_access_tag = int(match.group(2), 16)
 
 def process_stack_history(line, symbolizer, ignore_tags=False):
@@ -196,10 +202,9 @@ args = parser.parse_args()
 
 # Unstripped binaries location.
 binary_prefixes = args.symbols or []
-if not binary_prefixes:
-  if 'ANDROID_PRODUCT_OUT' in os.environ:
-    product_out = os.path.join(os.environ['ANDROID_PRODUCT_OUT'], 'symbols')
-    binary_prefixes.append(product_out)
+if not binary_prefixes and 'ANDROID_PRODUCT_OUT' in os.environ:
+  product_out = os.path.join(os.environ['ANDROID_PRODUCT_OUT'], 'symbols')
+  binary_prefixes.append(product_out)
 
 for p in binary_prefixes:
   if not os.path.isdir(p):
@@ -209,7 +214,7 @@ for p in binary_prefixes:
 # Source location.
 paths_to_cut = args.source or []
 if not paths_to_cut:
-  paths_to_cut.append(os.getcwd() + '/')
+  paths_to_cut.append(f'{os.getcwd()}/')
   if 'ANDROID_BUILD_TOP' in os.environ:
     paths_to_cut.append(os.environ['ANDROID_BUILD_TOP'] + '/')
 
@@ -232,11 +237,10 @@ if not symbolizer_path:
   if os.path.exists(s):
     symbolizer_path = s
 
-if not symbolizer_path:
-  if 'ANDROID_BUILD_TOP' in os.environ:
-    s = os.path.join(os.environ['ANDROID_BUILD_TOP'], 'prebuilts/clang/host/linux-x86/llvm-binutils-stable/llvm-symbolizer')
-    if os.path.exists(s):
-      symbolizer_path = s
+if not symbolizer_path and 'ANDROID_BUILD_TOP' in os.environ:
+  s = os.path.join(os.environ['ANDROID_BUILD_TOP'], 'prebuilts/clang/host/linux-x86/llvm-binutils-stable/llvm-symbolizer')
+  if os.path.exists(s):
+    symbolizer_path = s
 
 if not symbolizer_path:
   for path in os.environ["PATH"].split(os.pathsep):
@@ -249,8 +253,7 @@ def extract_version(s):
   idx = s.rfind('-')
   if idx == -1:
     return 0
-  x = float(s[idx + 1:])
-  return x
+  return float(s[idx + 1:])
 
 if not symbolizer_path:
   for path in os.environ["PATH"].split(os.pathsep):

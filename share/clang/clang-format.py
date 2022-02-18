@@ -84,7 +84,7 @@ def main():
     for op in reversed(sequence.get_opcodes()):
       if op[0] not in ['equal', 'delete']:
         lines += ['-lines', '%s:%s' % (op[3] + 1, op[4])]
-    if lines == []:
+    if not lines:
       return
   else:
     lines = ['-lines', '%s:%s' % (vim.current.range.start + 1,
@@ -93,9 +93,8 @@ def main():
   # Convert cursor (line, col) to bytes.
   # Don't use line2byte: https://github.com/vim/vim/issues/5930
   _, cursor_line, cursor_col, _ = vim.eval('getpos(".")') # 1-based
-  cursor_byte = 0
-  for line in text.split(b'\n')[:int(cursor_line) - 1]:
-    cursor_byte += len(line) + 1
+  cursor_byte = sum(
+      len(line) + 1 for line in text.split(b'\n')[:int(cursor_line) - 1])
   cursor_byte += int(cursor_col) - 1
   if cursor_byte < 0:
     print('Couldn\'t determine cursor position. Is your file empty?')
@@ -148,7 +147,7 @@ def main():
     # Convert cursor bytes to (line, col)
     # Don't use goto: https://github.com/vim/vim/issues/5930
     cursor_byte = int(header['Cursor'])
-    prefix = content[0:cursor_byte]
+    prefix = content[:cursor_byte]
     cursor_line = 1 + prefix.count(b'\n')
     cursor_column = 1 + len(prefix.rsplit(b'\n', 1)[-1])
     vim.command('call cursor(%d, %d)' % (cursor_line, cursor_column))
